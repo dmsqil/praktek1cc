@@ -1,4 +1,4 @@
-name: Deploy to Server
+name: Deploy Web1 (praktek1cc)
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Copy files to server
+      - name: Copy files to server (Web1)
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/web1.com/public_html"
           rsync -avz --delete ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/web1.com/public_html/
