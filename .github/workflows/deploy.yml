@@ -1,8 +1,9 @@
-name: Deploy Web1 to Oracle Cloud
+name: Deploy to Server
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   deploy:
@@ -10,32 +11,21 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v0.1.7
+        uses: actions/checkout@v4
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          repository: dmsqil/praktek1cc
+          ref: main
 
-          script: |
-            echo "=== START DEPLOY WEB1 ==="
-            cd /var/www/web1.com/public_html || exit 1
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-            if [ ! -d ".git" ]; then
-              echo "Cloning repository for the first time..."
-              git clone https://github.com/Mandr11/web1.git .
-            else
-              echo "Pulling latest changes..."
-              git reset --hard
-              git pull origin main
-            fi
+      - name: Copy files to server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/web1.com/public_html"
+          rsync -avz --delete ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/web1.com/public_html/
 
-            sudo chown -R ubuntu:www-data /var/www/web1.com/public_html
-            sudo chmod -R 755 /var/www/web1.com/public_html
-
-            sudo systemctl reload nginx
-            sudo systemctl restart php8.1-fpm
-
-            echo "=== DEPLOY WEB1 SUCCESSFUL ==="
+      - name: Restart Nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "sudo systemctl restart nginx"
